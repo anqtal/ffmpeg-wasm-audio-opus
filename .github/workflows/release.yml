@@ -1,0 +1,45 @@
+name: Build and release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build
+        run: |
+          docker buildx build --build-arg EXTRA_CFLAGS="-O3 -msimd128" -o out .
+          ls -l out/dist/esm out/dist/umd
+      - name: Package
+        run: |
+          cd out/dist
+          tar -czf "$RUNNER_TEMP/ffmpeg-core.tar.gz" esm umd
+          cp esm/ffmpeg-core.js esm/ffmpeg-core.wasm "$RUNNER_TEMP/"
+          cd "$RUNNER_TEMP"
+          sha256sum ffmpeg-core.js ffmpeg-core.wasm ffmpeg-core.tar.gz > SHA256SUMS
+          cat SHA256SUMS
+      - name: Publish latest release and remove previous releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="build-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+          cd "$RUNNER_TEMP"
+          gh release create "$tag" ffmpeg-core.js ffmpeg-core.wasm ffmpeg-core.tar.gz SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "ffmpeg-core $tag" \
+            --notes "Audio-only single-thread core (ESM files attached; ESM and UMD in the tarball). Commit: $GITHUB_SHA" --latest
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[].tag_name' > tags
+          while IFS= read -r old; do
+            if [ "$old" != "$tag" ]; then gh release delete "$old" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag; fi
+          done < tags
