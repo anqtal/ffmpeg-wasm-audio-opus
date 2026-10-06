@@ -31,7 +31,8 @@ jobs:
           cd "$RUNNER_TEMP"
           sha256sum ffmpeg-core.js ffmpeg-core.wasm ffmpeg-core.tar.gz > SHA256SUMS
           cat SHA256SUMS
-      - name: Publish latest release and remove previous releases
+      # Releases are kept: consumers pin a build by its tag and checksums.
+      - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -40,7 +41,3 @@ jobs:
           gh release create "$tag" ffmpeg-core.js ffmpeg-core.wasm ffmpeg-core.tar.gz SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "ffmpeg-core $tag" \
             --notes "Audio-only single-thread core, transcoding to Opus only (ESM files attached; ESM, UMD and licenses in the tarball). FFmpeg n5.1.4 (LGPL 2.1+), libopus 1.3.1 (BSD). Commit: $GITHUB_SHA" --latest
-          gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[].tag_name' > tags
-          while IFS= read -r old; do
-            if [ "$old" != "$tag" ]; then gh release delete "$old" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag; fi
-          done < tags

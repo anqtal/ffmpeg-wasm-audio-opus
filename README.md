@@ -16,7 +16,7 @@ wasm 约 2.2 MB（brotli 后约 0.8 MB），官方完整版约 32 MB。The wasm 
 
 ## 构建 Building
 
-每次 push 到 main，GitHub Actions 构建并发布 Release，只保留最新一版；`ffmpeg-core.js`、`ffmpeg-core.wasm` 为 ESM 版本，tarball 内另含 UMD 版本。Every push to main is built by GitHub Actions and published as a release, keeping only the latest one; `ffmpeg-core.js` and `ffmpeg-core.wasm` are the ESM build, and the tarball also contains the UMD build.
+每次 push 到 main，GitHub Actions 构建并发布 Release，历史版本都保留，使用方按标签和 SHA-256 固定版本；`ffmpeg-core.js`、`ffmpeg-core.wasm` 为 ESM 版本，tarball 内另含 UMD 版本。Every push to main is built by GitHub Actions and published as a release; past releases are kept so consumers can pin one by tag and SHA-256. `ffmpeg-core.js` and `ffmpeg-core.wasm` are the ESM build, and the tarball also contains the UMD build.
 
 本地构建需要 Docker。Building locally requires Docker:
 
